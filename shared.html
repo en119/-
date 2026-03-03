@@ -29,6 +29,9 @@
         .btn-exp { background: var(--expense); box-shadow: 0 4px 0 #c0392b; }
         .action-btn:active { transform: translateY(3px); box-shadow: none; }
 
+        /* 清除按鈕樣式 */
+        .btn-clear { width: 100%; padding: 12px; background: #ff4d4d; color: white; border: none; border-radius: 10px; font-size: 14px; font-weight: bold; margin-bottom: 20px; cursor: pointer; }
+
         .history { height: 320px; overflow-y: auto; margin-top: 10px; }
         .item { display: flex; justify-content: space-between; padding: 15px 5px; border-bottom: 1px solid #eee; align-items: center; }
         .user-tag { font-size: 11px; background: #9b59b6; color: white; padding: 2px 8px; border-radius: 20px; margin-left: 5px; }
@@ -63,13 +66,14 @@
         </div>
     </div>
 
+    <button class="btn-clear" onclick="clearData()">🗑️ 每週結算：一鍵清空紀錄</button>
+
     <div style="font-size:14px; font-weight:bold; color: #555;">📊 最近明細</div>
     <div id="historyList" class="history"></div>
 </div>
 
 <script>
     const G_FORM_URL = "https://docs.google.com/forms/d/e/1FAIpQLScv1RDI7TyPPuQb_QlB7_Rh2WEIP4q6-8AC6oOOIMZDm4it9A/formResponse";
-    // 記得在這裡填入這份新試算表的 AppsScript 網址喔！
     const CLOUD_API_URL = "https://script.google.com/macros/s/AKfycbyHwij641XamJgCGd3gKo1BO50DRfgpAZ4DTpxbmxe490apYdcpreOeH4Nfo3jlpjouQQ/exec"; 
     
     const ID_NAME = "entry.693835429"; 
@@ -116,6 +120,19 @@
         });
     }
 
+    // 清除按鈕的功能
+    function clearData() {
+        if (confirm("卓恩，確定要清空本週所有紀錄嗎？(清空後無法找回喔！)")) {
+            document.getElementById('syncStatus').innerText = "🧹 正在清空...";
+            fetch(CLOUD_API_URL, { method: "POST", mode: "no-cors" })
+            .then(() => {
+                alert("清理成功！餘額即將歸零。");
+                setTimeout(fetchData, 1500);
+            })
+            .catch(e => alert("清理失敗：" + e));
+        }
+    }
+
     function copyBankInfo() {
         const bankText = "國泰世華 (013) 125506233868";
         navigator.clipboard.writeText(bankText).then(() => {
@@ -131,19 +148,7 @@
             }, 2000);
         });
     }
-    function clearSheet() {
-            if (confirm("確定要清空本週所有紀錄嗎？(清空後無法找回喔！)")) {
-                // ⚠️ 重要：請把下面這串換成你在 Apps Script 得到的「網頁應用程式網址」
-                const clearAppUrl = "https://script.google.com/macros/s/AKfycbx8p6p-3ut5JjI7ULsTBjDQ7LmIL3OMmYuVk-L5kPoOIvV6x-OxApHxhUBN3Wt83_mV/exec";
-                
-                fetch(clearAppUrl, { mode: 'no-cors' })
-                    .then(() => {
-                        alert("清理指令已送出！網頁重新整理後金額就會歸零。");
-                        location.reload();
-                    })
-                    .catch(err => alert("清理失敗，請檢查設定：" + err));
-            }
-    }
+   
     fetchData();
 </script>
 </body>
