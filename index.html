@@ -4,23 +4,32 @@
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
     <title>雲端對帳監督系統</title>
+    
+    <link rel="manifest" href="manifest.json">
+    <meta name="apple-mobile-web-app-capable" content="yes">
+    <meta name="apple-mobile-web-app-status-bar-style" content="black">
+    <meta name="apple-mobile-web-app-title" content="記帳監督">
+
     <style>
         :root { --primary: #4a90e2; --income: #2ecc71; --expense: #e74c3c; --bg: #f4f7f6; }
         body { font-family: -apple-system, sans-serif; background: var(--bg); margin: 0; padding: 15px; display: flex; justify-content: center; }
         .container { width: 100%; max-width: 450px; background: white; border-radius: 20px; padding: 20px; box-shadow: 0 8px 20px rgba(0,0,0,0.08); }
         .balance-board { background: #333; color: white; padding: 20px; border-radius: 15px; text-align: center; margin-bottom: 20px; }
         .balance-amount { font-size: 32px; font-weight: bold; margin: 5px 0; color: #f1c40f; }
-        .init-section { background: #eee; padding: 10px; border-radius: 10px; margin-bottom: 15px; font-size: 14px; display: flex; align-items: center; justify-content: space-between; }
-        .init-section input { width: 100px; padding: 5px; border-radius: 5px; border: 1px solid #ccc; text-align: right; }
+        
+        /* 這裡就是你說的：輸入錢包目前餘額的框框 */
+        .init-section { background: #fff9db; padding: 12px; border: 1px solid #f1c40f; border-radius: 10px; margin-bottom: 15px; font-size: 14px; display: flex; align-items: center; justify-content: space-between; }
+        .init-section input { width: 110px; padding: 8px; border-radius: 6px; border: 1px solid #ccc; text-align: right; font-size: 16px; font-weight: bold; }
+
         .input-group { display: grid; grid-template-columns: 1fr 1fr; gap: 10px; margin-bottom: 15px; background: #f9f9f9; padding: 10px; border-radius: 10px; }
         .full-width { grid-column: span 2; }
         input { padding: 12px; border: 1px solid #ddd; border-radius: 8px; font-size: 16px; box-sizing: border-box; }
-        button { padding: 12px; border: none; border-radius: 8px; font-size: 16px; font-weight: bold; cursor: pointer; color: white; }
+        button { padding: 12px; border: none; border-radius: 8px; font-size: 16px; font-weight: bold; cursor: pointer; color: white; transition: 0.2s; }
         .btn-income { background: var(--income); }
         .btn-expense { background: var(--expense); }
+        .sync-status { text-align: center; font-size: 10px; color: #999; margin-bottom: 10px; }
         .history { height: 350px; overflow-y: auto; border-top: 1px solid #eee; margin-top: 10px; }
         .item { display: flex; justify-content: space-between; padding: 12px 5px; border-bottom: 1px solid #f9f9f9; align-items: center; }
-        .sync-status { text-align: center; font-size: 10px; color: #999; margin-bottom: 10px; }
     </style>
 </head>
 <body>
@@ -28,20 +37,20 @@
 <div class="container">
     <div class="sync-status" id="syncStatus">☁️ 雲端同步中...</div>
     <div class="balance-board">
-        <div style="font-size:14px; opacity:0.8;">錢包理論餘額 (應有金額)</div>
+        <div style="font-size:14px; opacity:0.8;">錢包應有金額 (理論餘額)</div>
         <div class="balance-amount" id="currentBalance">$ 0</div>
     </div>
 
     <div class="init-section">
-        <span>本週起始金額：</span>
+        <strong>💰 本週起始金額：</strong>
         <div>
             <input type="number" id="startBalance" value="0" onchange="refreshUI()" inputmode="decimal">
-            <span>元</span>
+            <span style="font-weight:bold;"> 元</span>
         </div>
     </div>
 
     <div class="input-group">
-        <input type="text" id="itemName" class="full-width" placeholder="品項">
+        <input type="text" id="itemName" class="full-width" placeholder="品項名稱">
         <input type="number" id="itemPrice" class="full-width" placeholder="金額" inputmode="decimal">
         <button class="btn-income" onclick="handleAdd('收入')">＋ 收入</button>
         <button class="btn-expense" onclick="handleAdd('支出')">－ 支出</button>
@@ -49,25 +58,29 @@
 
     <div style="display:flex; justify-content:space-between; align-items:center;">
         <strong style="font-size:14px;">最近雲端紀錄</strong>
-        <button onclick="fetchCloudData()" style="background:none; color:var(--primary); font-size:12px; width:auto; padding:0;">🔄 手動刷新</button>
+        <button onclick="fetchCloudData()" style="background:none; color:var(--primary); font-size:12px; width:auto; padding:0; text-decoration:underline;">🔄 手動整理</button>
     </div>
     <div id="historyList" class="history"></div>
 </div>
 
 <script>
-    // 請填入你之前的資訊
+    // --- 請確保這裡填入正確的資訊 ---
     const G_FORM_URL = "https://docs.google.com/forms/u/0/d/e/1FAIpQLSdL0eLpcL1I9Hhu8FH7fds2jBIhRW2T_aRyE7tSnDA-_tAZpQ/formResponse";
-    const CLOUD_API_URL = "https://script.google.com/macros/s/AKfycbyqSEziKVxmS9ey95LCZ4GNDKI6YYLpFbhBsUia2Ahm3PfvH8_ceMQBy68U-9FgqqWi/exec"; 
+    const CLOUD_API_URL = "這裡請貼上你AppsScript部署後的網頁應用程式網址"; 
     const ID_NAME = "entry.254688195";
     const ID_TYPE = "entry.166850842";
     const ID_PRICE = "entry.2093753088";
 
     let cloudRecords = [];
 
-    // 從本地讀取上次設定的初始金額
+    // 初始化：讀取上次手機記住的起始金額
     document.getElementById('startBalance').value = localStorage.getItem('cloud_start_amount') || 0;
 
     async function fetchCloudData() {
+        if (CLOUD_API_URL.includes("這裡請貼上")) {
+            document.getElementById('syncStatus').innerText = "⚠️ 尚未設定雲端讀取網址";
+            return;
+        }
         document.getElementById('syncStatus').innerText = "☁️ 正在抓取雲端資料...";
         try {
             const response = await fetch(CLOUD_API_URL);
@@ -75,14 +88,14 @@
             refreshUI();
             document.getElementById('syncStatus').innerText = "✅ 已與雲端同步";
         } catch (e) {
-            document.getElementById('syncStatus').innerText = "❌ 同步失敗，請檢查網路";
+            document.getElementById('syncStatus').innerText = "❌ 同步失敗，請檢查 API 設定";
         }
     }
 
     function handleAdd(type) {
         const name = document.getElementById('itemName').value;
         const price = document.getElementById('itemPrice').value;
-        if (!name || !price) return;
+        if (!name || !price) { alert("內容填完再按啦！"); return; }
 
         const formData = new URLSearchParams();
         formData.append(ID_NAME, name);
@@ -93,13 +106,15 @@
         .then(() => {
             document.getElementById('itemName').value = '';
             document.getElementById('itemPrice').value = '';
-            setTimeout(fetchCloudData, 2000); // 2秒後自動刷新
+            // 提示一下宏大，這很重要
+            document.getElementById('syncStatus').innerText = "🚀 資料上傳中，2秒後刷新...";
+            setTimeout(fetchCloudData, 2000);
         });
     }
 
     function refreshUI() {
         const startAmount = parseFloat(document.getElementById('startBalance').value) || 0;
-        localStorage.setItem('cloud_start_amount', startAmount); // 存起來
+        localStorage.setItem('cloud_start_amount', startAmount); // 記住在這支手機上
 
         const listDiv = document.getElementById('historyList');
         let currentTotal = startAmount;
@@ -124,7 +139,6 @@
         document.getElementById('currentBalance').innerText = `$ ${currentTotal.toLocaleString()}`;
     }
 
-    // 初始載入
     fetchCloudData();
 </script>
 </body>
