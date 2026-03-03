@@ -81,7 +81,7 @@
     function handleAdd(type) {
         const name = document.getElementById('itemName').value;
         const price = document.getElementById('itemPrice').value;
-        if (!name || !price) { alert("內容填完再按啦！"); return; }
+        if (!name || !price) { alert("內容填完再按！"); return; }
         const formData = new URLSearchParams();
         formData.append("entry.254688195", name);
         formData.append("entry.166850842", type);
@@ -95,7 +95,7 @@
     }
 
     async function clearCloudData() {
-        if (confirm("卓恩，確定要清空所有雲端紀錄嗎？")) {
+        if (confirm("確定要清空所有雲端紀錄嗎？")) {
             document.getElementById('syncStatus').innerText = "🧹 正在清空雲端...";
             try {
                 // 發送 POST 請求觸發 App Script 的 doPost 功能
