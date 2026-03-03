@@ -3,7 +3,7 @@
 <head>
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=1.0, user-scalable=no">
-    <title>💑 小金庫</title>
+    <title>小金庫</title>
     <link rel="manifest" href="manifest_shared.json">
     <meta name="apple-mobile-web-app-capable" content="yes">
     <style>
@@ -68,4 +68,70 @@
 </div>
 
 <script>
-    const G_FORM_URL = "
+    const G_FORM_URL = "https://docs.google.com/forms/d/e/1FAIpQLScv1RDI7TyPPuQb_QlB7_Rh2WEIP4q6-8AC6oOOIMZDm4it9A/formResponse";
+    // 記得在這裡填入這份新試算表的 AppsScript 網址喔！
+    const CLOUD_API_URL = "這裡填入你的新AppsScript網址"; 
+    
+    const ID_NAME = "entry.693835429"; 
+    const ID_TYPE = "entry.1877176608";
+    const ID_PRICE = "entry.1236593110";
+    const ID_USER = "entry.1639575585";
+
+    async function fetchData() {
+        document.getElementById('syncStatus').innerText = "☁️ 同步中...";
+        try {
+            const res = await fetch(CLOUD_API_URL);
+            const data = await res.json();
+            let balance = 0;
+            document.getElementById('historyList').innerHTML = data.map(r => {
+                const p = parseFloat(r.price) || 0;
+                if (r.type === '收入') balance += p; else balance -= p;
+                return `<div class="item">
+                    <div>
+                        <b style="color:#333;">${r.name}</b> <span class="user-tag">${r.user}</span>
+                        <div style="font-size:10px; color:#999; margin-top:3px;">${r.time}</div>
+                    </div>
+                    <span style="font-weight:bold; font-size:16px; color:${r.type==='收入'?'var(--income)':'var(--expense)'}">
+                        ${r.type==='收入'?'+':'-'}$${p.toLocaleString()}
+                    </span>
+                </div>`;
+            }).join('');
+            document.getElementById('totalBalance').innerText = `$ ${balance.toLocaleString()}`;
+            document.getElementById('syncStatus').innerText = "✅ 已同步";
+        } catch(e) { document.getElementById('syncStatus').innerText = "❌ 連線失敗"; }
+    }
+
+    function submitData(type) {
+        const name = document.getElementById('itemName').value;
+        const price = document.getElementById('itemPrice').value;
+        const user = document.getElementById('payUser').value;
+        if(!name || !price) return;
+        const formData = new URLSearchParams();
+        formData.append(ID_NAME, name); formData.append(ID_PRICE, price);
+        formData.append(ID_USER, user); formData.append(ID_TYPE, type);
+        fetch(G_FORM_URL, { method: "POST", mode: "no-cors", body: formData }).then(() => {
+            document.getElementById('itemName').value = '';
+            document.getElementById('itemPrice').value = '';
+            setTimeout(fetchData, 2000);
+        });
+    }
+
+    function copyBankInfo() {
+        const bankText = "國泰世華 (013) 125506233868";
+        navigator.clipboard.writeText(bankText).then(() => {
+            const btn = document.getElementById('copyBtn');
+            const originalText = btn.innerText;
+            btn.innerText = "OK!";
+            btn.style.background = "#2ecc71";
+            btn.style.color = "white";
+            setTimeout(() => { 
+                btn.innerText = originalText; 
+                btn.style.background = "#f1c40f";
+                btn.style.color = "#333";
+            }, 2000);
+        });
+    }
+    fetchData();
+</script>
+</body>
+</html>
