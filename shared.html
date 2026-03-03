@@ -131,6 +131,18 @@
             }, 2000);
         });
     }
+    function clearSheet() {
+            if (confirm("確定要清空本週所有紀錄嗎？(清空後無法找回喔！)")) {
+                // ⚠️ 重要：請把下面這串換成你在 Apps Script 得到的「網頁應用程式網址」
+                const clearAppUrl = "https://script.google.com/macros/s/AKfycbx8p6p-3ut5JjI7ULsTBjDQ7LmIL3OMmYuVk-L5kPoOIvV6x-OxApHxhUBN3Wt83_mV/exec";
+                
+                fetch(clearAppUrl, { mode: 'no-cors' })
+                    .then(() => {
+                        alert("清理指令已送出！網頁重新整理後金額就會歸零。");
+                        location.reload();
+                    })
+                    .catch(err => alert("清理失敗，請檢查設定：" + err));
+            }
     fetchData();
 </script>
 </body>
