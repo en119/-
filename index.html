@@ -4,12 +4,6 @@
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=1.0, user-scalable=no">
     <title>雲端對帳監督系統</title>
-    
-    <link rel="manifest" href="manifest.json">
-    <meta name="apple-mobile-web-app-capable" content="yes">
-    <meta name="apple-mobile-web-app-status-bar-style" content="black">
-    <meta name="apple-mobile-web-app-title" content="記帳監督">
-
     <style>
         :root { --primary: #4a90e2; --income: #2ecc71; --expense: #e74c3c; --bg: #f4f7f6; }
         body { font-family: -apple-system, sans-serif; background: var(--bg); margin: 0; padding: 15px; display: flex; justify-content: center; }
@@ -24,7 +18,8 @@
         button { padding: 12px; border: none; border-radius: 8px; font-size: 16px; font-weight: bold; cursor: pointer; color: white; transition: 0.2s; }
         .btn-income { background: var(--income); }
         .btn-expense { background: var(--expense); }
-        .btn-clear { background: #ff4d4d; font-size: 12px; padding: 5px 10px; border-radius: 5px; } /* 清除鍵樣式 */
+        /* 清除鍵樣式 */
+        .btn-clear { background: #ff4d4d; font-size: 12px; padding: 5px 10px; border-radius: 5px; width: auto; } 
         .sync-status { text-align: center; font-size: 10px; color: #999; margin-bottom: 10px; }
         .history { height: 350px; overflow-y: auto; border-top: 1px solid #eee; margin-top: 10px; }
         .item { display: flex; justify-content: space-between; padding: 12px 5px; border-bottom: 1px solid #f9f9f9; align-items: center; }
@@ -65,9 +60,8 @@
 </div>
 
 <script>
-    // --- 這裡要確保網址是對的 ---
     const G_FORM_URL = "https://docs.google.com/forms/u/0/d/e/1FAIpQLSdL0eLpcL1I9Hhu8FH7fds2jBIhRW2T_aRyE7tSnDA-_tAZpQ/formResponse";
-    const CLOUD_API_URL = "https://script.google.com/macros/s/AKfycbykTzmBtV4Qi8yh8h-2h4YtwNIJKHqyxvLE3EpIM835pBqYh_gR3Eo18mpjQz9dw-JQ/exec"; 
+    const CLOUD_API_URL = "https://script.google.com/macros/s/AKfycbzTFS1GCgUiPIWFBgLxTdv_zRPkDUlwSrka6Ja8Rj6gaOGm1Lwdpc5ZkVP20qBXtbsp/exec"; 
 
     let cloudRecords = [];
     document.getElementById('startBalance').value = localStorage.getItem('cloud_start_amount') || 0;
@@ -100,14 +94,14 @@
         });
     }
 
-    // 新增：清除雲端紀錄功能
     async function clearCloudData() {
-        if (confirm("卓恩，確定要清空所有雲端紀錄嗎？（清除後無法復原喔！）")) {
+        if (confirm("卓恩，確定要清空所有雲端紀錄嗎？")) {
             document.getElementById('syncStatus').innerText = "🧹 正在清空雲端...";
             try {
+                // 發送 POST 請求觸發 App Script 的 doPost 功能
                 await fetch(CLOUD_API_URL, { method: "POST", mode: "no-cors" });
                 alert("已成功清空！");
-                fetchCloudData(); // 重新整理畫面
+                location.reload(); 
             } catch (e) {
                 alert("清除失敗，請檢查設定");
             }
@@ -118,21 +112,17 @@
         const startAmount = parseFloat(document.getElementById('startBalance').value) || 0;
         localStorage.setItem('cloud_start_amount', startAmount);
         const listDiv = document.getElementById('historyList');
-        let currentTotal = startAmount;
-
-        // 反轉陣列讓最新資料顯示在最上面
-        listDiv.innerHTML = cloudRecords.slice().reverse().map(r => {
-            const p = parseFloat(r.price) || 0;
-            if (r.type === '收入') currentTotal += p; else currentTotal -= p;
-            return `<div class="item"><div><b>${r.name}</b><br><small>${r.time}</small></div><b style="color:${r.type==='收入'?'var(--income)':'var(--expense)'}">${r.type==='收入'?'+':'-'}$${p}</b></div>`;
-        }).join('');
-
-        // 計算總額時要按原始順序跑一次
+        
         let finalBalance = startAmount;
         cloudRecords.forEach(r => {
             const p = parseFloat(r.price) || 0;
             if (r.type === '收入') finalBalance += p; else finalBalance -= p;
         });
+
+        listDiv.innerHTML = cloudRecords.slice().reverse().map(r => {
+            const p = parseFloat(r.price) || 0;
+            return `<div class="item"><div><b>${r.name}</b><br><small>${r.time}</small></div><b style="color:${r.type==='收入'?'var(--income)':'var(--expense)'}">${r.type==='收入'?'+':'-'}$${p.toLocaleString()}</b></div>`;
+        }).join('');
 
         document.getElementById('currentBalance').innerText = `$ ${finalBalance.toLocaleString()}`;
     }
